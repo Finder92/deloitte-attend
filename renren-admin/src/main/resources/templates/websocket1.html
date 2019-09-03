@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<title>WebSocket Test</title>
+<script type="text/javascript">
+    //主机地址
+    var wsUrl = "ws://192.168.1.29:8080/websocket";
+    //websocket连接
+    var ws = wsUrl;
+
+    var output;
+    //初始化操作
+    function init() {
+        output = document.getElementById("output");
+        testWebSocket();
+    }
+
+    function testWebSocket() {
+        websocket = new WebSocket(ws);
+        websocket.onopen = function(evt) {
+            onOpen(evt)
+        };
+        websocket.onclose = function(evt) {
+            onClose(evt)
+        };
+        websocket.onmessage = function(evt) {
+            onMessage(evt)
+        };
+        websocket.onerror = function(evt) {
+            onError(evt)
+        };
+    }
+
+    function onOpen(evt) {
+        heartCheck.reset().start();
+        writeToScreen("CONNECTED");
+    }
+
+    function onClose(evt) {
+        writeToScreen("DISCONNECTED");
+    }
+
+    //收到消息
+    function onMessage(evt) {
+        //var obj = eval('(' + evt.data + ')');
+        console.log(evt);
+        //如果获取到消息，心跳检测重置
+        heartCheck.reset().start();
+
+
+    }
+
+    function onError(evt) {
+        writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+    }
+
+    function doSend(message) {
+        writeToScreen("SENT: " + message);
+        websocket.send(message);
+    }
+
+    //输出识别结果到屏幕
+    function writeToScreen(message) {
+        var result = document.getElementById("test");
+        var pre = document.createElement("p");
+        pre.style.wordWrap = "break-word";
+        pre.innerHTML = message;
+        output.appendChild(pre);
+    }
+
+    window.addEventListener("load", init, false);
+    
+var heartCheck = {
+    timeout: 2000,
+    timeoutObj: null,
+    serverTimeoutObj: null,
+    reset: function () {
+        clearTimeout(this.timeoutObj);
+        clearTimeout(this.serverTimeoutObj);
+        return this;
+    },
+    start: function () {
+        var self = this;
+        this.timeoutObj = setTimeout(function () {
+            //这里发送一个心跳，后端收到后，返回一个心跳消息，
+            //onmessage拿到返回的心跳就说明连接正常
+            websocket.send("HeartBeat" + new Date());
+            console.info("客户端发送心跳：" + new Date());
+            self.serverTimeoutObj = setTimeout(function () {//如果超过一定时间还没重置，说明后端主动断开了
+                websocket.close();//如果onclose会执行reconnect，我们执行ws.close()就行了.如果直接执行reconnect 会触发onclose导致重连两次
+            }, self.timeout)
+        }, this.timeout)
+    }
+}
+</script>
+
+<h2>WebSocket Test</h2>
+<div id="output">
+    <p id="test">result</p>
+</div>

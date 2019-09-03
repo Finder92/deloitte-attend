@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="attendUser.attendUssname" @keyup.enter="query" placeholder="用户名">
+            </div>
+            <a class="btn btn-default" @click="query">查询</a>
+            <#if shiro.hasPermission("attend:attenduser:save")>
+            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+        </#if>
+
+        <#if shiro.hasPermission("attend:attenduser:update")>
+        <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+    </#if>
+
+    <#if shiro.hasPermission("attend:attenduser:delete")>
+    <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+</#if>
+
+<#if shiro.hasPermission("attend:attenduser:delete")>
+<a class="btn btn-primary" @click="batchsign"><i class="fa fa-id-badge"></i></i>&nbsp;一键签到</a>
+</#if>
+
+</div>
+<table id="jqGrid"></table>
+<div id="jqGridPager"></div>
+</div>
+
+<div v-show="!showList" class="panel panel-default">
+    <div class="panel-heading">{{title}}</div>
+    <form class="form-horizontal">
+        <div class="form-group">
+            <div class="col-sm-2 control-label">0:用户 1陌生人</div>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="attendUser.attendUsertype" placeholder="0:用户 1陌生人"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-2 control-label">与会人员姓名</div>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="attendUser.attendUssname" placeholder="与会人员姓名"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-2 control-label">签到状态</div>
+            <!--<div class="col-sm-10">
+                <input type="text" class="form-control" v-model="attendUser.attendSignstate"
+                       placeholder="签到状态1:已签到 0未签到"/>
+            </div>-->
+            <label class="radio-inline">
+                <input type="radio" name="status" value="0" v-model="attendUser.attendSignstate"/> 未签到
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="status" value="1" v-model="attendUser.attendSignstate"/> 已签到
+            </label>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-2 control-label">签到时间</div>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="attendUser.attendSigntime" placeholder="签到时间"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-2 control-label">人脸识别记录的时间</div>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" v-model="attendUser.attendCreatetime" placeholder="人脸识别记录的时间"/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-2 control-label"></div>
+            <input type="button" class="btn btn-primary" id="btnSaveOrUpdate" data-loading-text="保存中..."
+                   @click="saveOrUpdate" value="确定"/>
+            &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+        </div>
+    </form>
+</div>
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/attend/attenduser.js?_${.now?long}"></script>
+<script type="text/javascript">
+    var socket;
+    if(typeof(WebSocket) == "undefined") {
+        console.log("您的浏览器不支持WebSocket");
+    }else{
+        console.log("您的浏览器支持WebSocket");
+
+        //实现化WebSocket对象，指定要连接的服务器地址与端口  建立连接
+        socket = new WebSocket("ws://localhost:8088/websocket");
+        //打开事件
+        socket.onopen = function() {
+            console.log("Socket 已打开");
+        };
+        //获得消息事件
+        socket.onmessage = function(msg) {
+            var obj = JSON.parse(msg.data);
+            if(obj.type==0){
+                console.info("识别到陌生人:"+obj.type)
+                /*layer.confirm('您有新的需要录入的陌生人', {
+                    btn: ['确定', '取消'] //按钮
+                })*/
+                layer.open({
+                    type:1
+                    ,offset:['150px', '600px']//具体配置参考：http://www.layui.com/doc/modules/layer.html#offset
+                    ,content: '<div style="padding: 20px 50px;">'+ "您有需要录入的陌生人" +'</div>'
+                    ,btn: '关闭全部'
+                    ,btnAlign: 'c' //按钮居中
+                    ,shade: 0 //不显示遮罩
+                    ,yes: function(){
+                        layer.closeAll();
+                    }
+                });
+            }else if(obj.type==1){
+                console.info("保存到新纪录:"+obj.type)
+                vm.reload();
+            }
+
+
+        };
+        //关闭事件
+        socket.onclose = function() {
+            console.log("Socket已关闭");
+        };
+        //发生了错误事件
+        socket.onerror = function() {
+            alert("Socket发生了错误");
+        }
+
+        //关闭连接
+        function closeWebSocket() {
+            socket.close();
+        }
+
+        //发送消息
+        function send() {
+            var message = document.getElementById('text').value;
+            socket.send(message);
+        }
+    }
+
+</script>
+</body>
+</html>

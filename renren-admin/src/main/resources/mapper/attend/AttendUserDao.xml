@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.renren.modules.attend.dao.AttendUserDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="io.renren.modules.attend.entity.AttendUserEntity" id="attendUserMap">
+        <result property="attendUserid" column="attend_userid"/>
+        <result property="attendUsertype" column="attend_usertype"/>
+        <result property="attendUssname" column="attend_ussname"/>
+        <result property="attendSignstate" column="attend_signstate"/>
+        <result property="attendSigntime" column="attend_signtime"/>
+        <result property="attendCreatetime" column="attend_createtime"/>
+        <result property="attendPictureUrl" column="attend_picture_url"/>
+    </resultMap>
+
+    <sql id="Base_Column_List" >
+    attend_userid, attend_usertype, attend_ussname, attend_signstate, attend_signtime, attend_createtime,attend_picture_url
+  </sql>
+    <update id="updateSignState" parameterType="long" >
+        update attend_user
+        set
+        attend_signstate='1',attend_signtime=NOW()
+        where
+        attend_userid=#{attend_userid,jdbcType=INTEGER} and attend_signstate='0'
+    </update>
+    <update id="batchUpdateSignState" parameterType="arraylist">
+        <foreach collection="list" item="userId" index="index" open="" close="" separator=";">
+            update attend_user
+            set
+            attend_signstate='1',attend_signtime=NOW()
+            where
+            attend_userid=#{userId,jdbcType=INTEGER} and attend_signstate='0'
+        </foreach>
+    </update>
+
+    <select id="queryByAttendUserName" parameterType="string" resultMap="attendUserMap">
+        select
+        <include refid="Base_Column_List"></include>
+        from attend_user
+        where attend_ussname=#{attendUssname,jdbcType=VARCHAR}
+    </select>
+
+</mapper>
